@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
 // POST /api/users/register
@@ -23,8 +24,31 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/users/login
-router.post('/login', (req, res) => {
-  res.send('Login route - coming soon');
+router.post('/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: 'Incorrect email or password' });
+    }
+
+    const correctPw = await user.isCorrectPassword(password);
+    if (!correctPw) {
+      return res.status(400).json({ message: 'Incorrect email or password' });
+    }
+
+    const token = jwt.sign(
+      { _id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    const { password: _, ...userResponse } = user.toObject();
+    res.json({ token, user: userResponse });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
 });
 
 module.exports = router;
