@@ -1,7 +1,8 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+import { Schema, model } from "mongoose";
+import bcrypt from "bcrypt";
 
-const userSchema = new mongoose.Schema({
+
+const userSchema = new Schema({
   username: {
     type: String,
     required: true,
@@ -12,7 +13,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    match: [/.+@.+\..+/, 'Must match an email address!'],
+    match: [/.+@.+\..+/, "Must match an email address!"],
   },
   password: {
     type: String,
@@ -21,17 +22,20 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// Pre-save hook: hash password before saving
-userSchema.pre('save', async function () {
-  if (this.isNew || this.isModified('password')) {
+// Pre-save MDW hook to hash password before saving
+  userSchema.pre("save", async function () {
+  if (this.isNew || this.isModified("password")) {
     const saltRounds = 10;
     this.password = await bcrypt.hash(this.password, saltRounds);
   }
 });
 
-// Instance method: compare incoming password to stored hash
+// Method to compare incoming password to stored hash
 userSchema.methods.isCorrectPassword = async function (password) {
   return bcrypt.compare(password, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+// Create the User model using the userSchema
+const User = model("User", userSchema);
+
+export default User; 
